@@ -183,7 +183,7 @@ void setup()
 }
 
 time_t prevDisplay = 0; // 显示时间
-unsigned long weaterTime = 0;
+unsigned long weatherTime = 0;
 
 void loop(){
   
@@ -193,9 +193,9 @@ void loop(){
   }
 
   
-  if(millis() - weaterTime > 300000){ //5分钟更新一次天气
-    weaterTime = millis();
-    getCityWeater();
+  if(millis() - weatherTime > 300000){ //5分钟更新一次天气
+    weatherTime = millis();
+    getCityWeather();
   }
   scrollBanner();
   imgAnim();
@@ -228,7 +228,7 @@ void getCityCode(){
        //cityCode = str.substring(aa+4,aa+4+9).toInt();
        cityCode = str.substring(aa+4,aa+4+9);
        Serial.println(cityCode); 
-       getCityWeater();
+       getCityWeather();
     }else{
       Serial.println("获取城市代码失败");  
     }
@@ -246,7 +246,7 @@ void getCityCode(){
 
 
 // 获取城市天气
-void getCityWeater(){
+void getCityWeather(){
  String URL = "http://d1.weather.com.cn/weather_index/" + cityCode + ".html?_="+String(now());
   //创建 HTTPClient 对象
   HTTPClient httpClient;
@@ -283,7 +283,7 @@ void getCityWeater(){
     String jsonFC = str.substring(indexStart+5,indexEnd);
     Serial.println(jsonFC);
     
-    weaterData(&jsonCityDZ,&jsonDataSK,&jsonFC);
+    weatherData(&jsonCityDZ,&jsonDataSK,&jsonFC);
     Serial.println("获取成功");
     
   } else {
@@ -299,7 +299,7 @@ void getCityWeater(){
 String scrollText[6];
 //int scrollTextWidth = 0;
 //天气信息写到屏幕上
-void weaterData(String *cityDZ,String *dataSK,String *dataFC){
+void weatherData(String *cityDZ,String *dataSK,String *dataFC){
   
   DynamicJsonDocument doc(1024);
   deserializeJson(doc, *dataSK);
