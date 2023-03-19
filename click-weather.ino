@@ -183,7 +183,7 @@ void setup()
 }
 
 time_t prevDisplay = 0; // 显示时间
-unsigned long weaterTime = 0;
+unsigned long weatherTime = 0;
 
 void loop(){
   
@@ -193,9 +193,9 @@ void loop(){
   }
 
   
-  if(millis() - weaterTime > 300000){ //5分钟更新一次天气
-    weaterTime = millis();
-    getCityWeater();
+  if(millis() - weatherTime > 300000){ //5分钟更新一次天气
+    weatherTime = millis();
+    getCityWeather();
   }
   scrollBanner();
   imgAnim();
@@ -228,7 +228,7 @@ void getCityCode(){
        //cityCode = str.substring(aa+4,aa+4+9).toInt();
        cityCode = str.substring(aa+4,aa+4+9);
        Serial.println(cityCode); 
-       getCityWeater();
+       getCityWeather();
     }else{
       Serial.println("获取城市代码失败");  
     }
@@ -246,7 +246,7 @@ void getCityCode(){
 
 
 // 获取城市天气
-void getCityWeater(){
+void getCityWeather(){
  String URL = "http://d1.weather.com.cn/weather_index/" + cityCode + ".html?_="+String(now());
   //创建 HTTPClient 对象
   HTTPClient httpClient;
@@ -283,7 +283,7 @@ void getCityWeater(){
     String jsonFC = str.substring(indexStart+5,indexEnd);
     Serial.println(jsonFC);
     
-    weaterData(&jsonCityDZ,&jsonDataSK,&jsonFC);
+    weatherData(&jsonCityDZ,&jsonDataSK,&jsonFC);
     Serial.println("获取成功");
     
   } else {
@@ -299,7 +299,7 @@ void getCityWeater(){
 String scrollText[6];
 //int scrollTextWidth = 0;
 //天气信息写到屏幕上
-void weaterData(String *cityDZ,String *dataSK,String *dataFC){
+void weatherData(String *cityDZ,String *dataSK,String *dataFC){
   
   DynamicJsonDocument doc(1024);
   deserializeJson(doc, *dataSK);
@@ -397,30 +397,29 @@ int currentIndex = 0;
 int prevTime = 0;
 TFT_eSprite clkb = TFT_eSprite(&tft);
 
-void scrollBanner(){
-  if(millis() - prevTime > 2500){ //2.5秒切换一次
+void scrollBanner() {
+  static int state;
+  int t_now = millis();
 
-    if(scrollText[currentIndex]){
-  
-      clkb.setColorDepth(8);
-      clkb.loadFont(ZdyLwFont_20);
-      
-      for(int pos = 24; pos>0 ; pos--){
-        scrollTxt(pos);
-      }
-      
-      clkb.deleteSprite();
-      clkb.unloadFont();
-  
-      if(currentIndex>=5){
-        currentIndex = 0;  //回第一个
-      }else{
-        currentIndex += 1;  //准备切换到下一个  
-      }
-      //Serial.println(currentIndex);
-      
+  if (state == 0 && t_now - prevTime > 2500 && scrollText[currentIndex]) {  //2.5秒切换一次
+    clkb.setColorDepth(8);
+    clkb.loadFont(ZdyLwFont_20);
+    state = 1;
+  }
+  if (state >= 1 && state <= 24 && t_now - prevTime > 20) {
+    scrollTxt(25 - state);
+    state++;
+    prevTime = t_now;
+  }
+  if (state == 25) {
+    clkb.deleteSprite();
+    clkb.unloadFont();
+    currentIndex++;
+    if (currentIndex >= 6) {
+      currentIndex = 0;  //回第一个
     }
-    prevTime = millis();
+    state = 0;
+    prevTime = t_now;
   }
 }
 
@@ -434,30 +433,19 @@ void scrollTxt(int pos){
     clkb.pushSprite(2,4);
 }
 
-void imgAnim(){
-  int x=80,y=94,dt=30;//瘦子版dt=10毫秒 胖子30较为合适
+void imgAnim() {
+  const int x = 80, y = 94, dt = 50;  //瘦子版dt=10毫秒 胖子30较为合适
+  const uint8_t *img_list[] = { i0, i1, i2, i3, i4, i5, i6, i7, i8, i9 };
+  const size_t img_size[] = { sizeof i0, sizeof i1, sizeof i2, sizeof i3, sizeof i4, sizeof i5, sizeof i6, sizeof i7, sizeof i8, sizeof i9 };
+  static int t_last, img_index;
+  int t_now = millis();
 
-  TJpgDec.drawJpg(x,y,i0, sizeof(i0));
-  delay(dt);
-  TJpgDec.drawJpg(x,y,i1, sizeof(i1));
-  delay(dt);
-  TJpgDec.drawJpg(x,y,i2, sizeof(i2));
-  delay(dt);
-  TJpgDec.drawJpg(x,y,i3, sizeof(i3));
-  delay(dt);  
-  TJpgDec.drawJpg(x,y,i4, sizeof(i4));
-  delay(dt);  
-  TJpgDec.drawJpg(x,y,i5, sizeof(i5));
-  delay(dt);  
-  TJpgDec.drawJpg(x,y,i6, sizeof(i6));
-  delay(dt);  
-  TJpgDec.drawJpg(x,y,i7, sizeof(i7));
-  delay(dt);  
-  TJpgDec.drawJpg(x,y,i8, sizeof(i8));
-  delay(dt);  
-  TJpgDec.drawJpg(x,y,i9, sizeof(i9));
-  delay(dt);  
-
+  if (t_now - t_last > dt) {
+    t_last = t_now;
+    TJpgDec.drawJpg(x, y, img_list[img_index], img_size[img_index]);
+    img_index++;
+    if (img_index >= 10) img_index = 0;
+  }
 }
 
 void digitalClockDisplay()
